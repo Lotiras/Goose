@@ -10,10 +10,12 @@ object GooseGame {
     commandLoop
 
   }
+
   def commandInput: String = {  //reading instruction method
     print("Input command: ")
     readLine()
   }
+
   @tailrec
   def commandLoop: Unit = {           //tail recursive game commands loop
     val inputCommand = commandInput   // read next command
@@ -30,8 +32,8 @@ object GooseGame {
     val splitCommand = command.split(" ").toList    // splits the string into words
     splitCommand match {
       case List("add", "player", name @ _) => addPlayer(name)       // add player command
-      case List("move", name @_, d1@ _, d2@_) if players.contains(name) => movePlayerFull(name, d1, d2)   // move with numbers
-      case List("move", name @_) if players.contains(name) => movePlayerHalf(name)    //move with random
+      case List("move", name @ _, d1 @ _, d2 @ _) if players.contains(name) => movePlayerFull(name, d1, d2)   // move with numbers
+      case List("move", name @ _) if players.contains(name) => movePlayerHalf(name)    //move with random
       case _ => println("Command not recognized")     // any invalid command
     }
 
@@ -56,20 +58,28 @@ object GooseGame {
       printPlayers(p.tail)
     }
   }
-  def movePlayerFull(name: String, d1: String, d2: String): Unit = {    //move order received with numbers
-    val n1: Int= d1.take(1).toInt
-    val n2: Int= d2.take(1).toInt
-    if ((n1 <= 6) && (n2 <=6))
-      movePlayer(name, n1, n2)      // string to int parsed and ready to use
-    else
-      println("Hey! You cheat, you Boosted Shit!")
+
+  def movePlayerFull(name: String, dice1: String, dice2: String): Unit = {    //move order received with numbers
+    val check1 = dice1.toCharArray
+    val check2 = dice2.toCharArray
+    if ((check1(1) == ',') && (check1(0).isDigit) && (check1.size == 2) && (check2(0).isDigit) && (check2.size == 1)) {     //checking if the program received two single digit numbers (and the comma)
+      val number1: Int = dice1.take(1).toInt
+      val number2: Int = dice2.take(1).toInt      //only take the digit and turn it to Int
+      if ((number1 <= 6) && (number2 <= 6)) {
+        movePlayer(name, number1, number2) // string parsed and ready to use
+      }
+      else println("Hey! You cheat, you Boosted Shit!")
+    }
+    else println("Dice roll is invalid")
   }
+
   def movePlayerHalf(name: String): Unit = {      // move order received w/o numbers
     val random = new Random(System.nanoTime())
     val n1: Int = random.nextInt(5) + 1
     val n2: Int = random.nextInt(5) + 1
     movePlayer(name, n1, n2)                // rolled dice, ready to use
   }
+
   def movePlayer(name: String, d1: Int, d2: Int): Unit = {    //prints first part inline, saves state, calls real move
     print(s"$name rolls $d1, $d2.")
     val movement: Int = d1 + d2
@@ -79,7 +89,7 @@ object GooseGame {
   }
 
   def enactPlayerMovement(name: String, movement: Int, p1: Int, p2: Int): Unit ={   //actually moving now
-    val start: String = p1 match {    // naming origin point specials
+    val start: String = p1 match {    // naming origin point special cases
       case 0 => "Start"
       case 6 => "The Bridge"
       case _ => p1.toString
@@ -89,24 +99,21 @@ object GooseGame {
       case x if x>63 => "63"
       case _ => p2.toString
     }
-    print(s" $name moves from $start to $end")
 
+    print(s" $name moves from $start to $end")
     val newPos = (name, p2)
     players = players + newPos    // movement done
 
-    p2 match { // check for goose, win, bounce or bridge
+    p2 match {              // check for goose, win, bounce or bridge
       case 5 | 9 | 14 | 18 | 23 | 27 => theGooseMove(name, movement, p2)    //Goose, this is a separate method in order to be called recursively
-      case 6 => {           //bridge
-        println(s". $name jumps to 12")
+      case 6 => {
+        println(s". $name jumps to 12")   //bridge
         val jumpedPos = (name, 12)
         players = players + jumpedPos
       }
-      case 63 => {      //win
-        println(s". $name Wins!!")
-
-      }
-      case x if x>63 => {     //bounce
-        val bounced: Int = 63 - (p2 - 63)
+      case 63 => println(s". $name Wins!!")  //Player wins
+      case x if x>63 => {
+        val bounced: Int = 63 - (p2 - 63)      //bounce
         println(s". $name bounces! $name returns to $bounced")
         val bouncedPos = (name, bounced)
         players = players + bouncedPos
@@ -135,22 +142,23 @@ object Tester extends App {
   GooseGame.addPlayer("Pippo")
   GooseGame.addPlayer("Pippo")
   GooseGame.addPlayer("Pluto")
-  GooseGame.movePlayerFull("Pippo", "4", "6")
+  GooseGame.movePlayerFull("Pippo", "4,", "6")
   GooseGame.movePlayerHalf("Pluto")
-  GooseGame.movePlayerFull("Pippo", "4", "6")
-  GooseGame.movePlayerFull("Pippo", "4", "6")
-  GooseGame.movePlayerFull("Pippo", "4", "6")
-  GooseGame.movePlayerFull("Pippo", "4", "6")
-  GooseGame.movePlayerFull("Pippo", "4", "6")
-  GooseGame.movePlayerFull("Pippo", "4", "6")
-  GooseGame.movePlayerFull("Pippo", "2", "3")
-  GooseGame.movePlayerFull("Pippo", "2", "1")
+  GooseGame.movePlayerFull("Pippo", "12,", "6")
+  GooseGame.movePlayerFull("Pippo", "4,", "6")
+  GooseGame.movePlayerFull("Pippo", "4,", "6")
+  GooseGame.movePlayerFull("Pippo", "4,", "6")
+  GooseGame.movePlayerFull("Pippo", "4,", "6")
+  GooseGame.movePlayerFull("Pippo", "4,", "6")
+  GooseGame.movePlayerFull("Pippo", "4,", "6")
+  GooseGame.movePlayerFull("Pippo", "2,", "3")
+  GooseGame.movePlayerFull("Pippo", "2,", "1")
   GooseGame.addPlayer("Minnie")
-  GooseGame.movePlayerFull("Minnie", "3", "2")
-  GooseGame.movePlayerFull("Minnie", "1", "3")
+  GooseGame.movePlayerFull("Minnie", "3,", "2")
+  GooseGame.movePlayerFull("Minnie", "1,", "3")
   GooseGame.addPlayer("MikeyTheLuckyBastard")
-  GooseGame.movePlayerFull("MikeyTheLuckyBastard", "3", "3")
-  GooseGame.movePlayerFull("MikeyTheLuckyBastard", "7", "9")
+  GooseGame.movePlayerFull("MikeyTheLuckyBastard", "3,", "3")
+  GooseGame.movePlayerFull("MikeyTheLuckyBastard", "7,", "9")
   print("here I test the multiple Gooses:")
   GooseGame.theGooseMove("P1", 5, 18)
 
