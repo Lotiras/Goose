@@ -70,64 +70,52 @@ object GooseGame {
 
   def movePlayerHalf(name: String): Unit = {      // move order received w/o numbers
     val random = new Random(System.nanoTime())
-    val n1: Int = random.nextInt(5) + 1
-    val n2: Int = random.nextInt(5) + 1
-    movePlayer(name, n1, n2)                // rolled dice, ready to use
+    val die1: Int = random.nextInt(5) + 1
+    val die2: Int = random.nextInt(5) + 1
+    movePlayer(name, die1, die2)                // rolled dice, ready to use
   }
 
-  def movePlayer(name: String, d1: Int, d2: Int): Unit = {    //prints first part inline, saves state, calls real move
-    print(s"$name rolls $d1, $d2.")
-    val movement: Int = d1 + d2
-    val previousPosition: Int = players(name)
-    val destinationPosition: Int = previousPosition + movement
-    enactPlayerMovement(name, movement, previousPosition, destinationPosition)
+  def movePlayer(name: String, die1: Int, die2: Int): Unit = {
+    val movement: Int = die1 + die2
+    val startingPosition: Int = players(name)
+    val destinationPosition: Int = startingPosition + movement
+    val movedPlayer = (name, destinationPosition)
+    players = players + movedPlayer
+    Printer.printOutMovement(name = name, die1 = die1, die2 = die2, start = startingPosition, end = destinationPosition)
+    checkSpecialMovement(name, movement, destinationPosition)
   }
 
-  def enactPlayerMovement(name: String, movement: Int, p1: Int, p2: Int): Unit ={   //actually moving now
-    val start: String = p1 match {    // naming origin point special cases
-      case `startCell` => "Start"
-      case `bridgeCell` => "The Bridge"
-      case _ => p1.toString
+  def checkSpecialMovement(name: String, movement: Int, position: Int): Unit = {
+    position match {
+      case x if `gooseCell`.contains(x) => theGooseMove(name, movement, position)
+      case `bridgeCell` => bridgeMove(name, movement, bridgeEndCell)
+      case `endCell` => Printer.printOutMovementWin(name)
+      case x if x>endCell => bounceMove(name, movement, position)
+      case _ => println()
     }
-    val end: String = p2 match {    // naming destination points special and bounce
-      case `bridgeCell` => "The Bridge"
-      case x if x>`endCell` => endCell.toString
-      case _ => p2.toString
-    }
-
-    print(s" $name moves from $start to $end")
-    val newPos = (name, p2)
-    players = players + newPos    // movement done
-
-    p2 match {              // check for goose, win, bounce or bridge
-      case x if `gooseCell`.contains(x) => theGooseMove(name, movement, p2)    //Goose, this is a separate method in order to be called recursively
-      case `bridgeCell` => {
-        println(s". $name jumps to $bridgeEndCell")   //bridge
-        val jumpedPos = (name, bridgeEndCell)
-        players = players + jumpedPos
-      }
-      case `endCell` => println(s". $name Wins!!")  //Player wins
-      case x if x>endCell => {
-        val bounced: Int = endCell - (p2 - endCell)      //bounce
-        println(s". $name bounces! $name returns to $bounced")
-        val bouncedPos = (name, bounced)
-        players = players + bouncedPos
-      }
-      case _ => println()     //if none of the above, end of line
-    }
-
   }
 
-  @tailrec
-  def theGooseMove(name: String, movement: Int, p2: Int): Unit = {    //move goose and print it
-    val gooseP2: Int = p2 + movement
-    val goosedPos = (name, gooseP2)
-    players = players + goosedPos
-    print(s", The Goose. $name moves again and goes to $gooseP2")
-    gooseP2 match { // goose again?
-      case x if `gooseCell`.contains(x) => theGooseMove(name, movement, gooseP2)
-      case _ => println()   //end of line for goose if none follow
-    }
+  def bounceMove(name: String, movement: Int, position: Int): Unit = {
+    val bounced: Int = endCell - (position - endCell)
+    val bouncedPlayer = (name, bounced)
+    players = players + bouncedPlayer
+    Printer.printOutMovementBounce(name, bounced)
+    checkSpecialMovement(name, movement, bounced)
+  }
+
+  def bridgeMove(name: String, movement: Int, endCell: Int): Unit = {
+    val jumpedPos = (name, endCell)
+    players = players + jumpedPos
+    Printer.printOutMovementBridge(name, endCell)
+    checkSpecialMovement(name, movement, endCell)
+  }
+
+  def theGooseMove(name: String, movement: Int, position: Int): Unit = {
+    val gooseDestination: Int = position + movement
+    val goosedPlayer = (name, gooseDestination)
+    players = players + goosedPlayer
+    Printer.printOutMovementGoose(name, gooseDestination)
+    checkSpecialMovement(name, movement, gooseDestination)
   }
 
 }
@@ -166,6 +154,36 @@ object Printer {
     println("Dice roll is invalid")
   }
 
+  def printOutMovement(name: String, die1: Int, die2: Int, start: Int, end: Int): Unit = {
+    val p1: String = start match {
+      case GooseGame.startCell => "Start"
+      case GooseGame.bridgeCell => "The Bridge"
+      case _ => start.toString
+    }
+    val p2: String = end match {
+      case GooseGame.bridgeCell => "The Bridge"
+      case x if x > GooseGame.endCell => GooseGame.endCell.toString
+      case _ => end.toString
+    }
+    print(s"$name rolls $die1, $die2. $name moves from $p1 to $p2")
+  }
+
+  def printOutMovementWin(name: String): Unit = {
+    println(s". $name Wins!!")
+  }
+
+  def printOutMovementBridge(name: String, destination: Int): Unit = {
+    print(s". $name jumps to $destination")
+  }
+
+  def printOutMovementBounce(name: String, destination: Int): Unit = {
+    print(s". $name bounces! $name returns to $destination")
+  }
+
+  def printOutMovementGoose(name: String, destination: Int): Unit = {
+    print(s", The Goose. $name moves again and goes to $destination")
+  }
+
 }
 
 object Tester extends App {
@@ -185,7 +203,8 @@ object Tester extends App {
   GooseGame.movePlayerFull("Pippo", "4,", "6")
   GooseGame.movePlayerFull("Pippo", "4,", "6")
   GooseGame.movePlayerFull("Pippo", "2,", "3")
-  GooseGame.movePlayerFull("Pippo", "2,", "1")
+  GooseGame.movePlayerFull("Pippo", "2,", "2")
+  GooseGame.movePlayerFull("Pippo", "1,", "1")
   GooseGame.addPlayer("Minnie")
   GooseGame.movePlayerFull("Minnie", "3,", "2")
   GooseGame.movePlayerFull("Minnie", "1,", "3")
