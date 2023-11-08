@@ -12,13 +12,12 @@ object GooseGame {
   var players: Map[String, Int] = Map()
 
   def main(args: Array[String]): Unit = {
-    println("Goose Game: started")
+    Printer.printOutStart()
     commandLoop
-
   }
 
   def commandInput: String = {  //reading instruction method
-    print("Input command: ")
+    Printer.printOutInput()
     readLine()
   }
 
@@ -26,7 +25,7 @@ object GooseGame {
   def commandLoop: Unit = {           //tail recursive game commands loop
     val inputCommand = commandInput   // read next command
     if (inputCommand=="exit") {       //exit will terminate the game
-      println("Goose shutting down, have a nice day.")
+      Printer.printOutExit()
     }
     else {
       parseCommand(inputCommand)      // understand and do stuff
@@ -40,43 +39,33 @@ object GooseGame {
       case List("add", "player", name) => addPlayer(name)       // add player command
       case List("move", name, d1, d2) if players.contains(name) => movePlayerFull(name, d1, d2)   // move with numbers
       case List("move", name) if players.contains(name) => movePlayerHalf(name)    //move with random
-      case _ => println("Command not recognized")     // any invalid command
+      case _ => Printer.printOutInvalidCommandError()     // any invalid command
     }
 
   }
 
   def addPlayer(name: String): Unit = {
     if (players.contains(name))
-      println(s"$name: already existing player")    //if player exists (case sensitive) returns error message
+      Printer.printOutDuplicatePlayer(name)    //if player exists (case sensitive) returns error message
     else {
       val newPlayer = (name, 0)
       players = players + newPlayer   // add player to player list
-      print("players: ")
-      printPlayers(players)     // print all players in list, inline
-      println("")               // end of line
-    }
+      Printer.printOutPlayers(players)
+      }
   }
 
-  @tailrec
-  def printPlayers(p: Map[String, Int]): Unit = {   //print players in given list as strings
-    if (p.nonEmpty) {
-      print(p.head._1 + " ")
-      printPlayers(p.tail)
-    }
-  }
-
-  def movePlayerFull(name: String, dice1: String, dice2: String): Unit = {    //move order received with numbers
-    val check1 = dice1.toCharArray
-    val check2 = dice2.toCharArray
+  def movePlayerFull(name: String, die1: String, die2: String): Unit = {    //move order received with numbers
+    val check1 = die1.toCharArray
+    val check2 = die2.toCharArray
     if ((check1(1) == ',') && (check1(0).isDigit) && (check1.size == 2) && (check2(0).isDigit) && (check2.size == 1)) {     //checking if the program received two single digit numbers (and the comma)
-      val number1: Int = dice1.take(1).toInt
-      val number2: Int = dice2.take(1).toInt      //only take the digit and turn it to Int
+      val number1: Int = die1.take(1).toInt
+      val number2: Int = die2.take(1).toInt      //only take the digit and turn it to Int
       if ((number1 <= 6) && (number2 <= 6)) {
         movePlayer(name, number1, number2) // string parsed and ready to use
       }
-      else println("Hey! You cheat, you Boosted Shit!")
+      else Printer.printOutCheaterError()
     }
-    else println("Dice roll is invalid")
+    else Printer.printOutInvalidDieError()
   }
 
   def movePlayerHalf(name: String): Unit = {      // move order received w/o numbers
@@ -143,7 +132,45 @@ object GooseGame {
 
 }
 
+object Printer {
+
+  def printOutStart(): Unit = {
+    println("Goose Game: started")
+  }
+
+  def printOutInput(): Unit = {
+    print("Input command: ")
+  }
+
+  def printOutExit(): Unit = {
+    println("Goose shutting down, have a nice day.")
+  }
+
+  def printOutInvalidCommandError(): Unit = {
+    println("Command not recognized")
+  }
+
+  def printOutDuplicatePlayer(name: String): Unit = {
+    println(s"$name: already existing player")
+  }
+
+  def printOutPlayers(playerList: Map[String, Int]): Unit = {
+    println(s"players: ${playerList.keys.mkString(" ")}")
+  }
+
+  def printOutCheaterError(): Unit = {
+    println("Hey! You cheat, you Boosted Shit!")
+  }
+
+  def printOutInvalidDieError(): Unit = {
+    println("Dice roll is invalid")
+  }
+
+}
+
 object Tester extends App {
+
+
 
   GooseGame.addPlayer("Pippo")
   GooseGame.addPlayer("Pippo")
@@ -165,7 +192,10 @@ object Tester extends App {
   GooseGame.addPlayer("MikeyTheLuckyBastard")
   GooseGame.movePlayerFull("MikeyTheLuckyBastard", "3,", "3")
   GooseGame.movePlayerFull("MikeyTheLuckyBastard", "7,", "9")
+  Printer.printOutPlayers(GooseGame.players)
   print("here I test the multiple Gooses:")
   GooseGame.theGooseMove("P1", 5, 18)
+
+
 
 }
