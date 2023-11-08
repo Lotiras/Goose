@@ -4,7 +4,13 @@ import scala.util.Random
 
 object GooseGame {
 
+  val startCell = 0
+  val endCell = 63
+  val bridgeCell = 6
+  val bridgeEndCell = 12
+  val gooseCell: List[Int] = List(5, 9, 14, 18, 23, 27)
   var players: Map[String, Int] = Map()
+
   def main(args: Array[String]): Unit = {
     println("Goose Game: started")
     commandLoop
@@ -31,9 +37,9 @@ object GooseGame {
   def parseCommand(command: String): Unit = {
     val splitCommand = command.split(" ").toList    // splits the string into words
     splitCommand match {
-      case List("add", "player", name @ _) => addPlayer(name)       // add player command
-      case List("move", name @ _, d1 @ _, d2 @ _) if players.contains(name) => movePlayerFull(name, d1, d2)   // move with numbers
-      case List("move", name @ _) if players.contains(name) => movePlayerHalf(name)    //move with random
+      case List("add", "player", name) => addPlayer(name)       // add player command
+      case List("move", name, d1, d2) if players.contains(name) => movePlayerFull(name, d1, d2)   // move with numbers
+      case List("move", name) if players.contains(name) => movePlayerHalf(name)    //move with random
       case _ => println("Command not recognized")     // any invalid command
     }
 
@@ -90,13 +96,13 @@ object GooseGame {
 
   def enactPlayerMovement(name: String, movement: Int, p1: Int, p2: Int): Unit ={   //actually moving now
     val start: String = p1 match {    // naming origin point special cases
-      case 0 => "Start"
-      case 6 => "The Bridge"
+      case `startCell` => "Start"
+      case `bridgeCell` => "The Bridge"
       case _ => p1.toString
     }
     val end: String = p2 match {    // naming destination points special and bounce
-      case 6 => "The Bridge"
-      case x if x>63 => "63"
+      case `bridgeCell` => "The Bridge"
+      case x if x>`endCell` => endCell.toString
       case _ => p2.toString
     }
 
@@ -105,15 +111,15 @@ object GooseGame {
     players = players + newPos    // movement done
 
     p2 match {              // check for goose, win, bounce or bridge
-      case 5 | 9 | 14 | 18 | 23 | 27 => theGooseMove(name, movement, p2)    //Goose, this is a separate method in order to be called recursively
-      case 6 => {
-        println(s". $name jumps to 12")   //bridge
-        val jumpedPos = (name, 12)
+      case x if `gooseCell`.contains(x) => theGooseMove(name, movement, p2)    //Goose, this is a separate method in order to be called recursively
+      case `bridgeCell` => {
+        println(s". $name jumps to $bridgeEndCell")   //bridge
+        val jumpedPos = (name, bridgeEndCell)
         players = players + jumpedPos
       }
-      case 63 => println(s". $name Wins!!")  //Player wins
-      case x if x>63 => {
-        val bounced: Int = 63 - (p2 - 63)      //bounce
+      case `endCell` => println(s". $name Wins!!")  //Player wins
+      case x if x>endCell => {
+        val bounced: Int = endCell - (p2 - endCell)      //bounce
         println(s". $name bounces! $name returns to $bounced")
         val bouncedPos = (name, bounced)
         players = players + bouncedPos
@@ -130,7 +136,7 @@ object GooseGame {
     players = players + goosedPos
     print(s", The Goose. $name moves again and goes to $gooseP2")
     gooseP2 match { // goose again?
-      case 5 | 9 | 14 | 18 | 23 | 27 => theGooseMove(name, movement, gooseP2)
+      case x if `gooseCell`.contains(x) => theGooseMove(name, movement, gooseP2)
       case _ => println()   //end of line for goose if none follow
     }
   }
