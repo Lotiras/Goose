@@ -81,8 +81,10 @@ object GooseGame {
     val destinationPosition: Int = startingPosition + movement
     val movedPlayer = (name, destinationPosition)
     players = players + movedPlayer
-    Printer.printOutMovement(name = name, die1 = die1, die2 = die2, start = startingPosition, end = destinationPosition)
+    Printer.printOutMovement(name, die1, die2, startingPosition, destinationPosition)
     checkSpecialMovement(name, movement, destinationPosition)
+    checkPrank(name, startingPosition)
+    Printer.printOutEndOfMovement()
   }
 
   def checkSpecialMovement(name: String, movement: Int, position: Int): Unit = {
@@ -91,7 +93,7 @@ object GooseGame {
       case `bridgeCell` => bridgeMove(name, movement, bridgeEndCell)
       case `endCell` => Printer.printOutMovementWin(name)
       case x if x>endCell => bounceMove(name, movement, position)
-      case _ => println()
+      case _ =>
     }
   }
 
@@ -116,6 +118,23 @@ object GooseGame {
     players = players + goosedPlayer
     Printer.printOutMovementGoose(name, gooseDestination)
     checkSpecialMovement(name, movement, gooseDestination)
+  }
+
+  def checkPrank(movingPlayerName: String, startingPosition: Int): Unit = {
+    val prankedPlayer = isOccupied(movingPlayerName)
+    if (prankedPlayer.nonEmpty) prankPlayer(prankedPlayer.head, players(movingPlayerName), startingPosition)
+  }
+
+  def isOccupied(movingPlayerName: String): Option[String] = {
+    val playerInPosition = players.filter(x => x._2 == players(movingPlayerName)).-(movingPlayerName)
+    if (playerInPosition.isEmpty) None
+    else Some(playerInPosition.head._1)
+  }
+
+  def prankPlayer(prankedPlayerName: String, origin: Int, destination: Int): Unit = {
+    val prankedPlayer = (prankedPlayerName, destination)
+    players = players + prankedPlayer
+    Printer.printOutPrankPlayer(prankedPlayerName, origin, destination)
   }
 
 }
@@ -169,7 +188,7 @@ object Printer {
   }
 
   def printOutMovementWin(name: String): Unit = {
-    println(s". $name Wins!!")
+    print(s". $name Wins!!")
   }
 
   def printOutMovementBridge(name: String, destination: Int): Unit = {
@@ -183,6 +202,12 @@ object Printer {
   def printOutMovementGoose(name: String, destination: Int): Unit = {
     print(s", The Goose. $name moves again and goes to $destination")
   }
+
+  def printOutPrankPlayer(name: String, origin: Int, destination: Int): Unit = {
+    print(s". On $origin there is $name, who returns to $destination")
+  }
+
+  def printOutEndOfMovement(): Unit = println()
 
 }
 
@@ -211,6 +236,9 @@ object Tester extends App {
   GooseGame.addPlayer("MikeyTheLuckyBastard")
   GooseGame.movePlayerFull("MikeyTheLuckyBastard", "3,", "3")
   GooseGame.movePlayerFull("MikeyTheLuckyBastard", "7,", "9")
+  GooseGame.addPlayer("Donald")
+  GooseGame.movePlayerFull("Donald", "3,", "2")
+  GooseGame.movePlayerFull("Donald", "1,", "3")
   Printer.printOutPlayers(GooseGame.players)
   print("here I test the multiple Gooses:")
   GooseGame.theGooseMove("P1", 5, 18)
